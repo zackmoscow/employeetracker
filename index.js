@@ -23,13 +23,13 @@ function init() {
         message: "What would you like to do?",
         choices: ["Add", "View", "Delete", "Update", "Exit"],
     }).then((answer) => {
-        if (answer.choices == "Add") {
+        if (answer.choices === "Add") {
           add();
-        } else if (answer.choices == "View") {
+        } else if (answer.choices === "View") {
           view();
-        } else if (answer.choices == "Delete") {
-          del();
-        } else if (answer.choices == "Update") {
+        // } else if (answer.choices === "Delete") {
+        //   del();
+        } else if (answer.choices === "Update") {
           update();
         } else {
           console.log("Goodbye!")
@@ -45,9 +45,9 @@ function add() {
         message: "What would you like to add?",
         choices: ["Department", "Role", "Employee"],
     }).then((answer) => {
-        if (answer.choices == "Department") {
+        if (answer.choices === "Department") {
           addDepartment();
-        } else if (answer.choices == "Role") {
+        } else if (answer.choices === "Role") {
           addRole();
         } else {
           addEmployee();
@@ -60,14 +60,16 @@ function view() {
         name: "choices",
         type: "list",
         message: "What would you like to view?",
-        choices: ["Departments", "Roles", "Employees"],
+        choices: ["Departments", "Roles", "Employees", "Employees by Manager"],
     }).then((answer) => {
-        if (answer.choices == "Departments") {
+        if (answer.choices === "Departments") {
           viewDepartments();
-        } else if (answer.choices == "Roles") {
+        } else if (answer.choices === "Roles") {
           viewRoles();
-        } else {
+        } else if (answer.choices === "Employees") {
           viewEmployees();
+        } else {
+          viewEmployeesbyManager();
         }
     });
 };
@@ -79,9 +81,9 @@ function del() {
         message: "What would you like to delete?",
         choices: ["Department", "Role", "Employee"],
     }).then((answer) => {
-        if (answer.choices == "Department") {
+        if (answer.choices === "Department") {
           delDepartment();
-        } else if (answer.choices == "Role") {
+        } else if (answer.choices === "Role") {
           delRole();
         } else {
           delEmployee();
@@ -96,7 +98,7 @@ function update() {
         message: "What would you like to update?",
         choices: ["Employee Role", "Employee Manager"],
     }).then((answer) => {
-        if (answer.choices == "Employee Role") {
+        if (answer.choices === "Employee Role") {
           updateRole();
         } else {
           updateManager();
@@ -214,3 +216,97 @@ function addEmployee() {
       });
     });
 };
+
+function viewDepartments() {
+    const query = "SELECT * FROM department";
+    connection.query(query, (err, res) => {
+      if (err) throw err;
+      let depTable = [];
+      res.forEach((dep) =>
+        depTable.push (
+          {"id": dep.id,
+          "name": dep.name})
+      );
+      console.log();
+      console.table(depTable);
+      return init();
+    });
+};
+
+function viewRoles() {
+    const query = "SELECT * FROM role";
+    connection.query(query, (err, res) => {
+      if (err) throw err;
+      let roleTable = [];
+      res.forEach((role) =>
+        roleTable.push (
+          {"id": role.id,
+          "title": role.title,
+          "salary": role.salary,
+          "dep id": role.department_id})
+      );
+      console.log();
+      console.table(roleTable);
+      return init();
+    });
+};
+
+function viewEmployees() {
+    const query = `
+    SELECT e1.id, e1.first_name, e1.last_name, role.title, department.name department, role.salary, CONCAT(e2.first_name, " ", e2.last_name) manager FROM employee e1
+    LEFT JOIN role ON e1.role_id = role.id
+    LEFT JOIN department ON role.department_id = department.id
+    LEFT JOIN employee e2 ON e2.id = e1.manager_id;
+    `
+    connection.query(query, (err, res) => {
+      if (err) throw err;
+      let empTable = [];
+      res.forEach((emp) =>
+        empTable.push(
+          {"id": emp.id,
+          "first name": emp.first_name,
+          "last name": emp.last_name,
+          "role": emp.title,
+          "salary": emp.salary,
+          "manager": emp.manager})
+      );
+      console.log();
+      console.table(empTable);
+      return init();
+    })
+};
+
+function viewEmployeesbyManager() {
+  const query = `
+  SELECT CONCAT(e1.first_name, " ", e1.last_name) manager, e2.id, e2.first_name, e2.last_name, role.title, department.name department, role.salary FROM employee e2
+  INNER JOIN employee e1 ON e1.id = e2.manager_id
+  LEFT JOIN role ON e2.role_id = role.id
+  LEFT JOIN department ON role.department_id = department.id
+  ORDER BY manager ASC;
+  `
+  connection.query(query, (err, res) => {
+    if (err) throw err;
+    let empTable = [];
+    res.forEach((emp) =>
+      empTable.push(
+        {"id": emp.id,
+        "first name": emp.first_name,
+        "last name": emp.last_name,
+        "role": emp.title,
+        "salary": emp.salary,
+        "manager": emp.manager})
+    );
+    console.log();
+    console.table(empTable);
+    return init();
+  })
+};
+
+
+function updateRole() {
+
+};
+
+function updateManager() {
+
+}
